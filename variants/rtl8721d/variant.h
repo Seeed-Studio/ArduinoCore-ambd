@@ -26,6 +26,7 @@
 #include "LOGUARTClass.h"
 #include "UARTClassOne.h"
 #include "UARTClassTwo.h"
+#include "UARTClassUsi.h"
 extern "C"{
 #include "PinNames.h"
 }
@@ -86,6 +87,7 @@ extern void wait_for_debug(void);
 extern LOGUARTClass Serial;
 extern UARTClassOne Serial1;
 extern UARTClassTwo Serial2;
+extern UARTClassUsi Serial3;
 #endif
 
 #endif /* _VARIANT_ARDUINO_AMEBA_ */
