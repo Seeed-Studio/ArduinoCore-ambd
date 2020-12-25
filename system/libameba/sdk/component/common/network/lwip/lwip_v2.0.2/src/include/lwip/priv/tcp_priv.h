@@ -179,57 +179,86 @@ err_t            tcp_process_refused_data(struct tcp_pcb *pcb);
 
 #else /* LWIP_EVENT_API */
 
-#define TCP_EVENT_ACCEPT(lpcb,pcb,arg,err,ret)                 \
-  do {                                                         \
-    if((lpcb)->accept != NULL)                                 \
-      (ret) = (lpcb)->accept((arg),(pcb),(err));               \
-    else (ret) = ERR_ARG;                                      \
+#define TCP_EVENT_ACCEPT(lpcb,pcb,arg,err,ret)                              \
+  do {                                                                      \
+    if((lpcb)->accept != NULL)                                              \
+      if((lpcb)->accept_external != NULL){                                  \
+        (ret) = (lpcb)->accept_external((lpcb)->accept,(arg),(pcb),(err));  \
+      }else{                                                                \
+        (ret) = (lpcb)->accept((arg),(pcb),(err));                          \
+      }                                                                     \
+    else (ret) = ERR_ARG;                                                   \
   } while (0)
 
-#define TCP_EVENT_SENT(pcb,space,ret)                          \
-  do {                                                         \
-    if((pcb)->sent != NULL)                                    \
-      (ret) = (pcb)->sent((pcb)->callback_arg,(pcb),(space));  \
-    else (ret) = ERR_OK;                                       \
+#define TCP_EVENT_SENT(pcb,space,ret)                                                 \
+  do {                                                                                \
+    if((pcb)->sent != NULL)                                                           \
+      if((pcb)->sent_external != NULL){                                               \
+        (ret) = (pcb)->sent_external((pcb)->sent,(pcb)->callback_arg,(pcb),(space));  \
+      }else{                                                                          \
+        (ret) = (pcb)->sent((pcb)->callback_arg,(pcb),(space));                       \
+      }                                                                               \
+    else (ret) = ERR_OK;                                                              \
   } while (0)
 
-#define TCP_EVENT_RECV(pcb,p,err,ret)                          \
-  do {                                                         \
-    if((pcb)->recv != NULL) {                                  \
-      (ret) = (pcb)->recv((pcb)->callback_arg,(pcb),(p),(err));\
-    } else {                                                   \
-      (ret) = tcp_recv_null(NULL, (pcb), (p), (err));          \
-    }                                                          \
+#define TCP_EVENT_RECV(pcb,p,err,ret)                                                   \
+  do {                                                                                  \
+    if((pcb)->recv != NULL) {                                                           \
+      if((pcb)->recv_external != NULL){                                                 \
+        (ret) = (pcb)->recv_external((pcb)->recv,(pcb)->callback_arg,(pcb),(p),(err));  \
+      }else{                                                                            \
+        (ret) = (pcb)->recv((pcb)->callback_arg,(pcb),(p),(err));                       \
+      }                                                                                 \
+    } else {                                                                            \
+      (ret) = tcp_recv_null(NULL, (pcb), (p), (err));                                   \
+    }                                                                                   \
   } while (0)
 
-#define TCP_EVENT_CLOSED(pcb,ret)                                \
-  do {                                                           \
-    if(((pcb)->recv != NULL)) {                                  \
-      (ret) = (pcb)->recv((pcb)->callback_arg,(pcb),NULL,ERR_OK);\
-    } else {                                                     \
-      (ret) = ERR_OK;                                            \
-    }                                                            \
+#define TCP_EVENT_CLOSED(pcb,ret)                                                         \
+  do {                                                                                    \
+    if(((pcb)->recv != NULL)) {                                                           \
+      if(((pcb)->recv_external != NULL)){                                                 \
+        (ret) = (pcb)->recv_external((pcb)->recv,(pcb)->callback_arg,(pcb),NULL,ERR_OK);  \
+      }else{                                                                              \
+        (ret) = (pcb)->recv((pcb)->callback_arg,(pcb),NULL,ERR_OK);                       \
+      }                                                                                   \
+    } else {                                                                              \
+      (ret) = ERR_OK;                                                                     \
+    }                                                                                     \
   } while (0)
 
-#define TCP_EVENT_CONNECTED(pcb,err,ret)                         \
-  do {                                                           \
-    if((pcb)->connected != NULL)                                 \
-      (ret) = (pcb)->connected((pcb)->callback_arg,(pcb),(err)); \
-    else (ret) = ERR_OK;                                         \
+#define TCP_EVENT_CONNECTED(pcb,err,ret)                                                      \
+  do {                                                                                        \
+    if((pcb)->connected != NULL)                                                              \
+      if((pcb)->connected_external != NULL){                                                  \
+        (ret) = (pcb)->connected_external((pcb)->connected,(pcb)->callback_arg,(pcb),(err));  \
+      }else{                                                                                  \
+        (ret) = (pcb)->connected((pcb)->callback_arg,(pcb),(err));                            \
+      }                                                                                       \
+    else (ret) = ERR_OK;                                                                      \
   } while (0)
 
-#define TCP_EVENT_POLL(pcb,ret)                                \
-  do {                                                         \
-    if((pcb)->poll != NULL)                                    \
-      (ret) = (pcb)->poll((pcb)->callback_arg,(pcb));          \
-    else (ret) = ERR_OK;                                       \
+#define TCP_EVENT_POLL(pcb,ret)                                               \
+  do {                                                                        \
+    if((pcb)->poll != NULL)                                                   \
+      if((pcb)->poll_external != NULL){                                       \
+        (ret) = (pcb)->poll_external((pcb)->poll,(pcb)->callback_arg,(pcb));  \
+      }else{                                                                  \
+        (ret) = (pcb)->poll((pcb)->callback_arg,(pcb));                       \
+      }                                                                       \
+    else (ret) = ERR_OK;                                                      \
   } while (0)
 
-#define TCP_EVENT_ERR(last_state,errf,arg,err)                 \
-  do {                                                         \
-    LWIP_UNUSED_ARG(last_state);                               \
-    if((errf) != NULL)                                         \
-      (errf)((arg),(err));                                     \
+#define TCP_EVENT_ERR(last_state,errf,errf_external,arg,err)    \
+  do {                                                          \
+    LWIP_UNUSED_ARG(last_state);                                \
+    if((errf) != NULL){                                         \
+      if(errf_external != NULL){                                \
+        (errf_external)((errf),(arg),(err));                    \
+      }else{                                                    \
+        (errf)((arg),(err));                                    \
+      }                                                         \
+    }                                                           \
   } while (0)
 
 #endif /* LWIP_EVENT_API */

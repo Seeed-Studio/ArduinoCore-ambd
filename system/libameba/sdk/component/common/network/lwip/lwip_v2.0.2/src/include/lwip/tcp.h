@@ -68,6 +68,7 @@ extern struct tcp_pcb *tcp_tw_pcbs;     //Realtek add: /* List of all TCP PCBs i
  *            callback function!
  */
 typedef err_t (*tcp_accept_fn)(void *arg, struct tcp_pcb *newpcb, err_t err);
+typedef err_t (*tcp_accept_external_fn)(uint32_t addr,void *arg, struct tcp_pcb *newpcb, err_t err);
 
 /** Function prototype for tcp receive callback functions. Called when data has
  * been received.
@@ -79,8 +80,8 @@ typedef err_t (*tcp_accept_fn)(void *arg, struct tcp_pcb *newpcb, err_t err);
  *            Only return ERR_ABRT if you have called tcp_abort from within the
  *            callback function!
  */
-typedef err_t (*tcp_recv_fn)(void *arg, struct tcp_pcb *tpcb,
-                             struct pbuf *p, err_t err);
+typedef err_t (*tcp_recv_fn)(void *arg, struct tcp_pcb *tpcb,struct pbuf *p, err_t err);
+typedef err_t (*tcp_recv_external_fn)(uint32_t addr,void *arg, struct tcp_pcb *tpcb,struct pbuf *p, err_t err);
 
 /** Function prototype for tcp sent callback functions. Called when sent data has
  * been acknowledged by the remote side. Use it to free corresponding resources.
@@ -93,8 +94,8 @@ typedef err_t (*tcp_recv_fn)(void *arg, struct tcp_pcb *tpcb,
  *            Only return ERR_ABRT if you have called tcp_abort from within the
  *            callback function!
  */
-typedef err_t (*tcp_sent_fn)(void *arg, struct tcp_pcb *tpcb,
-                              u16_t len);
+typedef err_t (*tcp_sent_fn)(void *arg, struct tcp_pcb *tpcb,u16_t len);
+typedef err_t (*tcp_sent_external_fn)(uint32_t addr,void *arg, struct tcp_pcb *tpcb,u16_t len);
 
 /** Function prototype for tcp poll callback functions. Called periodically as
  * specified by @see tcp_poll.
@@ -106,6 +107,7 @@ typedef err_t (*tcp_sent_fn)(void *arg, struct tcp_pcb *tpcb,
  *            callback function!
  */
 typedef err_t (*tcp_poll_fn)(void *arg, struct tcp_pcb *tpcb);
+typedef err_t (*tcp_poll_external_fn)(uint32_t addr,void *arg, struct tcp_pcb *tpcb);
 
 /** Function prototype for tcp error callback functions. Called when the pcb
  * receives a RST or is unexpectedly closed for any other reason.
@@ -118,6 +120,7 @@ typedef err_t (*tcp_poll_fn)(void *arg, struct tcp_pcb *tpcb);
  *            ERR_RST: the connection was reset by the remote host
  */
 typedef void  (*tcp_err_fn)(void *arg, err_t err);
+typedef void  (*tcp_err_external_fn)(uint32_t addr,void *arg, err_t err);
 
 /** Function prototype for tcp connected callback functions. Called when a pcb
  * is connected to the remote side after initiating a connection attempt by
@@ -132,6 +135,7 @@ typedef void  (*tcp_err_fn)(void *arg, err_t err);
  * @note When a connection attempt fails, the error callback is currently called!
  */
 typedef err_t (*tcp_connected_fn)(void *arg, struct tcp_pcb *tpcb, err_t err);
+typedef err_t (*tcp_connected_external_fn)(uint32_t addr,void *arg, struct tcp_pcb *tpcb, err_t err);
 
 #if LWIP_WND_SCALE
 #define RCV_WND_SCALE(pcb, wnd) (((wnd) >> (pcb)->rcv_scale))
@@ -190,6 +194,7 @@ struct tcp_pcb_listen {
 #if LWIP_CALLBACK_API
   /* Function to call when a listener has been connected. */
   tcp_accept_fn accept;
+  tcp_accept_external_fn accept_external;
 #endif /* LWIP_CALLBACK_API */
 
 #if TCP_LISTEN_BACKLOG
@@ -198,6 +203,19 @@ struct tcp_pcb_listen {
 #endif /* TCP_LISTEN_BACKLOG */
 };
 
+struct rpc_tcp_pcb {
+  enum tcp_state state;
+  ip_addr_t local_ip;
+  ip_addr_t remote_ip;
+  u16_t remote_port;
+  u16_t local_port;
+
+  tcpflags_t flags;
+  u16_t mss;
+  tcpwnd_size_t snd_buf;
+  u32_t master_addr;
+  u32_t client_addr;
+};
 
 /** the TCP protocol control block */
 struct tcp_pcb {
@@ -294,6 +312,12 @@ struct tcp_pcb {
 #endif /* LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG */
 
 #if LWIP_CALLBACK_API
+  tcp_sent_external_fn sent_external;
+  tcp_recv_external_fn recv_external;
+  tcp_connected_external_fn connected_external;
+  tcp_poll_external_fn poll_external;
+  tcp_err_external_fn errf_external;
+
   /* Function to be called when more send buffer space is available. */
   tcp_sent_fn sent;
   /* Function to be called when (in-sequence) data has arrived. */
@@ -330,6 +354,8 @@ struct tcp_pcb {
   u8_t snd_scale;
   u8_t rcv_scale;
 #endif
+  u32_t master_addr;
+  u32_t client_addr;
 };
 
 #if LWIP_EVENT_API

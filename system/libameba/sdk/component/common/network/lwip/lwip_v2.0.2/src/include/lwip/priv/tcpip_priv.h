@@ -107,6 +107,7 @@ struct tcpip_api_call_data
 };
 typedef err_t (*tcpip_api_call_fn)(struct tcpip_api_call_data* call);
 err_t tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call);
+err_t tcpip_api_call_external(tcpip_api_call_fn fn, struct tcpip_api_call_data *call);
 
 enum tcpip_msg_type {
   TCPIP_MSG_API,
