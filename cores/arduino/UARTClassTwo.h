@@ -21,32 +21,39 @@
 
 #include "HardwareSerial.h"
 #include "RingBuffer.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "PinNames.h"
+#include "serial_api.h"
+#ifdef __cplusplus
+}
+#endif
 
+template <PinName TX_PIN, PinName RX_PIN, int RX_BUFFER_SIZE>
 class UARTClassTwo : public HardwareSerial
 {
     public:
-        //UARTClassTwo(int dwIrq, RingBuffer* pRx_buffer);
-        UARTClassTwo(RingBuffer* pRx_buffer);
-        void begin(const uint32_t dwBaudRate);
+        UARTClassTwo(void);
+        void begin(const uint32_t baudRate);
         void end(void);
         int available(void);
         int peek(void);
         int read(void);
         void flush(void);
         size_t write(const uint8_t c);
-        void IrqHandler(void);
         using Print::write; // pull in write(str) and write(buf, size) from Print
         operator bool() { return true; }; // UART always active
 
-    protected:
-        void init(const uint32_t dwBaudRate, const uint32_t config);
-        RingBuffer *_rx_buffer;
-        int _dwIrq;
+    private:
+        RingBufferN<RX_BUFFER_SIZE> RxBuffer_;
+        serial_t UartObj_;
 
     private:
-        friend bool Serial2_available();
+        static void ArduinoUartIrqHandler(uint32_t id, SerialIrq event);
+
 };
 
-extern UARTClassTwo Serial2;
+extern UARTClassTwo<PA_26, PA_25, 4096> Serial2;
 
-#endif // _LOGUART_CLASS_
+#endif // _UART_CLASS_TWO_

@@ -86,7 +86,6 @@ extern void wait_for_debug(void);
 #ifdef __cplusplus
 extern LOGUARTClass Serial;
 extern UARTClassOne Serial1;
-extern UARTClassTwo Serial2;
 extern UARTClassUsi Serial3;
 #endif
 
